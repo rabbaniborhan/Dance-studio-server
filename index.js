@@ -55,7 +55,6 @@ async function run() {
 
 
 
-    
     app.get('/allinstructor',async(req,res)=>{
       const filter = { role: "instructor" };
       const options ={
@@ -68,14 +67,16 @@ async function run() {
     })
 
 
-
-
-
     app.get('/allclass',async(req,res)=>{
       const result= await classCollection.find().toArray();
       res.send(result);
     })
 
+
+
+
+    
+   
 
 
     // Send a ping to confirm a successful connection
