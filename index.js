@@ -28,9 +28,9 @@ async function run() {
 
     const database = client.db("danceDb");
     const classCollection = database.collection("classes");
-    const instructorCollection = database.collection("instructor");
+    const UsersCollection = database.collection("Users");
 
-    app.get("/class", async(req, res) => {
+    app.get("/popularclass", async(req, res) => {
       const query = {}
       const options = {
         sort: { "EnrollSeats" : -1 },
@@ -39,6 +39,44 @@ async function run() {
       const result = await classCollection.find(query,options).limit(6).toArray();
       res.send(result)
     });
+
+
+
+    app.get('/popularinstructor',async(req,res)=>{
+      const filter = { role: "instructor" };
+      const options ={
+        sort: { "enrollseats" : -1 },
+
+      }
+      const result= await UsersCollection.find(filter,options).limit(6).toArray();
+      res.send(result);
+
+    })
+
+
+
+    
+    app.get('/allinstructor',async(req,res)=>{
+      const filter = { role: "instructor" };
+      const options ={
+        sort: { "enrollseats" : -1 },
+
+      }
+      const result= await UsersCollection.find(filter,options).toArray();
+      res.send(result);
+
+    })
+
+
+
+
+
+    app.get('/allclass',async(req,res)=>{
+      const result= await classCollection.find().toArray();
+      res.send(result);
+    })
+
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
