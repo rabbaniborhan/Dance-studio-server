@@ -29,7 +29,11 @@ async function run() {
     const database = client.db("danceDb");
     const classCollection = database.collection("classes");
     const UsersCollection = database.collection("Users");
+    const cartCollection = database.collection("carts")
 
+
+
+  // popular calss and popular instructor section
     app.get("/popularclass", async(req, res) => {
       const query = {}
       const options = {
@@ -39,8 +43,6 @@ async function run() {
       const result = await classCollection.find(query,options).limit(6).toArray();
       res.send(result)
     });
-
-
 
     app.get('/popularinstructor',async(req,res)=>{
       const filter = { role: "instructor" };
@@ -55,6 +57,7 @@ async function run() {
 
 
 
+    // all calss and all instructor section
     app.get('/allinstructor',async(req,res)=>{
       const filter = { role: "instructor" };
       const options ={
@@ -72,6 +75,15 @@ async function run() {
       res.send(result);
     })
 
+
+
+    // cart section
+
+    app.post ('/carts', async(req,res)=>{
+       const item =req.body;
+       const result = await cartCollection.insertOne(item)
+       res.send(result);
+    })
 
 
 
