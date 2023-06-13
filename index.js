@@ -29,87 +29,93 @@ async function run() {
     const database = client.db("danceDb");
     const classCollection = database.collection("classes");
     const UsersCollection = database.collection("Users");
-    const cartCollection = database.collection("carts")
+    const cartCollection = database.collection("carts");
 
-
-
-  // popular calss and popular instructor section
-    app.get("/popularclass", async(req, res) => {
-      const query = {}
+    // popular calss and popular instructor section
+    app.get("/popularclass", async (req, res) => {
+      const query = {};
       const options = {
-        sort: { "EnrollSeats" : -1 },
-
+        sort: { EnrollSeats: -1 },
       };
-      const result = await classCollection.find(query,options).limit(6).toArray();
-      res.send(result)
+      const result = await classCollection
+        .find(query, options)
+        .limit(6)
+        .toArray();
+      res.send(result);
     });
 
-    app.get('/popularinstructor',async(req,res)=>{
+    app.get("/popularinstructor", async (req, res) => {
       const filter = { role: "instructor" };
-      const options ={
-        sort: { "enrollseats" : -1 },
-
-      }
-      const result= await UsersCollection.find(filter,options).limit(6).toArray();
+      const options = {
+        sort: { enrollseats: -1 },
+      };
+      const result = await UsersCollection.find(filter, options)
+        .limit(6)
+        .toArray();
       res.send(result);
-
-    })
-
-
+    });
 
     // all calss and all instructor section
-    app.get('/allinstructor',async(req,res)=>{
+    app.get("/allinstructor", async (req, res) => {
       const filter = { role: "instructor" };
-      const options ={
-        sort: { "enrollseats" : -1 },
+      const options = {
+        sort: { enrollseats: -1 },
+      };
+      const result = await UsersCollection.find(filter, options).toArray();
+      res.send(result);
+    });
 
+    app.get("/allclass", async (req, res) => {
+      const result = await classCollection.find().toArray();
+      res.send(result);
+    });
+
+    // user collection apis
+
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const query ={Email:user.Email} ;
+      const existingUser = await UsersCollection.findOne(query);
+      if (existingUser) {
+        return res.send({
+          message: "this user already added in userCollection",
+        });
       }
-      const result= await UsersCollection.find(filter,options).toArray();
+      const result = await UsersCollection.insertOne(user);
       res.send(result);
+    });
 
+
+
+    app.get('/users',async(req,res)=>{
+       const users = await UsersCollection.find().toArray();
+       res.send(users)
     })
-
-
-    app.get('/allclass',async(req,res)=>{
-      const result= await classCollection.find().toArray();
-      res.send(result);
-    })
-
-
 
     // cart collection apis
 
-    app.get('/carts',async(req,res)=>{
-      const email =req.query.email;
-      if(!email){
+    app.get("/carts", async (req, res) => {
+      const email = req.query.email;
+      if (!email) {
         res.send([]);
       }
-      const  query ={email:email};
-      const result =await cartCollection.find(query).toArray();
-      res.send(result)
-    })
+      const query = { email: email };
+      const result = await cartCollection.find(query).toArray();
+      res.send(result);
+    });
 
-    app.post ('/carts', async(req,res)=>{
-       const item =req.body;
-       const result = await cartCollection.insertOne(item)
-       res.send(result);
-    })
+    app.post("/carts", async (req, res) => {
+      const item = req.body;
+      const result = await cartCollection.insertOne(item);
+      res.send(result);
+    });
 
-
-
-    app.delete('/carts/:id', async(req,res)=>{
-      const id =req.params.id;
-      console.log(id)
-      const query = {_id: new ObjectId(id)};
+    app.delete("/carts/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
       const result = await cartCollection.deleteOne(query);
       res.send(result);
-    })
-
-
-
-    
-   
-
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
