@@ -30,6 +30,10 @@ const verifyJWT = (req, res, next) => {
   });
 };
 
+
+
+
+
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.msnuvxp.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -51,6 +55,16 @@ async function run() {
     const classCollection = database.collection("classes");
     const UsersCollection = database.collection("Users");
     const cartCollection = database.collection("carts");
+
+    const verifyAdmin = async (req,res,next)=>{
+      const email = req.decoded.email;
+      const query = {Email : email};
+      const user =await UsersCollection.findOne(query);
+      if ( user.role !== "admin"){
+        return res.status(403).send({error:true , message:'forbidden message'})
+      }
+      next();
+    }
 
     app.post("/jwt", (req, res) => {
       const user = req.body;
@@ -114,7 +128,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/users", async (req, res) => {
+    app.get("/users", verifyJWT, async (req, res) => {
       const users = await UsersCollection.find().toArray();
       res.send(users);
     });
@@ -131,6 +145,19 @@ async function run() {
       const result = await UsersCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
+
+
+
+    app.get('/users/admin/:email',verifyJWT,verifyAdmin, async(req,res)=>{
+      const email = req.params.email;
+      if(req.decoded.email !== email){
+        res.send ({admin :false})
+      }
+      const query = {Email:email};
+      const user = await UsersCollection.findOne(query)
+      const result = {admin:user?.role == 'admin'}
+      res.send(result);
+    })
 
     app.patch("/users/instructor/:id", async (req, res) => {
       const id = req.params.id;
