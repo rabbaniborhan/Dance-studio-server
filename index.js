@@ -74,7 +74,7 @@ async function run() {
 
     app.post("/users", async (req, res) => {
       const user = req.body;
-      const query ={Email:user.Email} ;
+      const query = { Email: user.Email };
       const existingUser = await UsersCollection.findOne(query);
       if (existingUser) {
         return res.send({
@@ -85,12 +85,43 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/users", async (req, res) => {
+      const users = await UsersCollection.find().toArray();
+      res.send(users);
+    });
 
+    app.patch("/users/admin/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          role: "admin",
+        },
+      };
 
-    app.get('/users',async(req,res)=>{
-       const users = await UsersCollection.find().toArray();
-       res.send(users)
-    })
+      const result = await UsersCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    app.patch("/users/instructor/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          role: "instructor",
+        },
+      };
+
+      const result = await UsersCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    app.delete("/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await UsersCollection.deleteOne(query);
+      res.send(result);
+    });
 
     // cart collection apis
 
