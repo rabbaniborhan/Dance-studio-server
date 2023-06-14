@@ -34,6 +34,9 @@ const verifyJWT = (req, res, next) => {
 
 
 
+
+
+
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.msnuvxp.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -65,6 +68,18 @@ async function run() {
       }
       next();
     }
+
+    const verifyInstructor = async (req,res,next)=>{
+      const email =req.decoded.email;
+      const query = {Email : email};
+      const user = await UsersCollection.findOne(query);
+      if(user.role !=='instructor'){
+        return res.status(403).send({error:true, message:'forbidden message'})
+      }
+      next()
+    }
+
+
 
     app.post("/jwt", (req, res) => {
       const user = req.body;
@@ -113,6 +128,18 @@ async function run() {
       res.send(result);
     });
 
+    app.patch('/allclassApprove/:id', async(req,res)=>{
+      const  id = req.params.id;
+      const filter = {_id : new ObjectId(id)}
+      const updateDoc = {
+        $set: {
+          status: "approved",
+        },
+      };
+      const result = await classCollection.updateOne(filter,updateDoc);
+      res.send(result);
+    })
+
     // user collection apis
 
     app.post("/users", async (req, res) => {
@@ -133,22 +160,23 @@ async function run() {
       res.send(users);
     });
 
-    app.patch("/users/admin/:id", async (req, res) => {
-      const id = req.params.id;
-      const filter = { _id: new ObjectId(id) };
-      const updateDoc = {
-        $set: {
-          role: "admin",
-        },
-      };
+    // app.patch("/users/admin/:id", async (req, res) => {
+    //   const id = req.params.id;
+    //   const filter = { _id: new ObjectId(id) };
+    //   const updateDoc = {
+    //     $set: {
+    //       role: "admin",
+    //     },
+    //   };
 
-      const result = await UsersCollection.updateOne(filter, updateDoc);
-      res.send(result);
-    });
+    //   const result = await UsersCollection.updateOne(filter, updateDoc);
+    //   res.send(result);
+    // });
 
 
 
-    app.get('/users/admin/:email',verifyJWT,verifyAdmin, async(req,res)=>{
+
+    app.get('/users/admin/:email',verifyJWT,async(req,res)=>{
       const email = req.params.email;
       if(req.decoded.email !== email){
         res.send ({admin :false})
@@ -158,6 +186,18 @@ async function run() {
       const result = {admin:user?.role == 'admin'}
       res.send(result);
     })
+
+    app.get('/users/instructor/:email',async(req,res)=>{
+      const email = req . params.email;
+      if(req.decoded.email !== email){
+        res.send({admin:false})
+      }
+      const query ={Email:email};
+      const user = await UsersCollection.findOne(query);
+      const result = {instructor:user?.role == 'instructor'}
+      res.send(result);
+    })
+
 
     app.patch("/users/instructor/:id", async (req, res) => {
       const id = req.params.id;
@@ -171,6 +211,8 @@ async function run() {
       const result = await UsersCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
+
+
 
     app.delete("/users/:id", async (req, res) => {
       const id = req.params.id;
