@@ -123,6 +123,12 @@ async function run() {
       res.send(result);
     });
 
+    app.post('/addclass',async(req,res)=>{
+      const addClass = req.body;
+      const result = await classCollection.insertOne(addClass)
+      res.send(result);
+    })
+
     app.get("/allclass", async (req, res) => {
       const result = await classCollection.find().toArray();
       res.send(result);
