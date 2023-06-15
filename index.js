@@ -92,11 +92,12 @@ async function run() {
     // popular calss and popular instructor section
     app.get("/popularclass", async (req, res) => {
       const query = {};
+      const filter ={Status:"approved"}
       const options = {
         sort: { EnrollSeats: -1 },
       };
       const result = await classCollection
-        .find(query, options)
+        .find(filter,query, options)
         .limit(6)
         .toArray();
       res.send(result);
@@ -142,18 +143,70 @@ async function run() {
 
 
     app.get("/allclass", async (req, res) => {
-      const result = await classCollection.find().toArray();
+      const filter ={Status:"approved"}
+      const result = await classCollection.find( filter).toArray();
       res.send(result);
     });
 
 
+    app.get("/allclasses", async (req, res) => {
+      const result = await classCollection.find( ).toArray();
+      res.send(result);
+    });
 
-    app.patch('/allclassApprove/:id', async(req,res)=>{
+
+// update data get apis
+    app.get('/class/:id',async(req,res)=>{
+      const id = req.params.id;
+      const query = {_id:new ObjectId(id)}
+      const result=await classCollection.findOne(query);
+      res.send(result)
+    })
+
+    app.put('/classupdate/:id',async(req,res)=>{
+      const id = req.params.id;
+      const filter ={_id:new ObjectId(id)}
+      const options = { upsert: true };
+      const Updateclass =req.body;
+      console.log(Updateclass)
+
+      const updateDoc = {
+        $set: {
+         Name:Updateclass.Name,
+         Image:Updateclass.Image,
+         InstructorName:Updateclass.InstructorName,
+         InstructorEmail: Updateclass.InstructorEmail,
+         Price: Updateclass.Price,
+         Status:Updateclass.Status
+         
+        },
+      };
+
+
+      const result = await classCollection.updateOne(filter,updateDoc,options)
+      res.send(result)
+
+    })
+
+
+
+    app.patch('/classApprove/:id', async(req,res)=>{
       const  id = req.params.id;
       const filter = {_id : new ObjectId(id)}
       const updateDoc = {
         $set: {
-          status: "approved",
+          Status: "approved",
+        },
+      };
+      const result = await classCollection.updateOne(filter,updateDoc);
+      res.send(result);
+    })
+    app.patch('/classdeny/:id', async(req,res)=>{
+      const  id = req.params.id;
+      const filter = {_id : new ObjectId(id)}
+      const updateDoc = {
+        $set: {
+          Status: "denied",
         },
       };
       const result = await classCollection.updateOne(filter,updateDoc);
@@ -180,18 +233,18 @@ async function run() {
       res.send(users);
     });
 
-    // app.patch("/users/admin/:id", async (req, res) => {
-    //   const id = req.params.id;
-    //   const filter = { _id: new ObjectId(id) };
-    //   const updateDoc = {
-    //     $set: {
-    //       role: "admin",
-    //     },
-    //   };
+    app.patch("/users/admin/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          role: "admin",
+        },
+      };
 
-    //   const result = await UsersCollection.updateOne(filter, updateDoc);
-    //   res.send(result);
-    // });
+      const result = await UsersCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
 
 
 
@@ -209,9 +262,10 @@ async function run() {
 
     app.get('/users/instructor/:email',async(req,res)=>{
       const email = req . params.email;
-      if(req.decoded.email !== email){
-        res.send({admin:false})
-      }
+     
+      // if(req.decoded?.email !== email){
+      //   res.send({instructor:false})
+      // }
       const query ={Email:email};
       const user = await UsersCollection.findOne(query);
       const result = {instructor:user?.role == 'instructor'}
