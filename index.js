@@ -129,10 +129,24 @@ async function run() {
       res.send(result);
     })
 
+    app.get('/myclass/:email',async(req,res)=>{
+      const email = req.params.email
+      if (!email) {
+        res.send([]);
+      }
+      const filter ={ InstructorEmail : email}
+      const result = await classCollection.find(filter).toArray();
+      res.send(result);
+    })
+
+
+
     app.get("/allclass", async (req, res) => {
       const result = await classCollection.find().toArray();
       res.send(result);
     });
+
+
 
     app.patch('/allclassApprove/:id', async(req,res)=>{
       const  id = req.params.id;
