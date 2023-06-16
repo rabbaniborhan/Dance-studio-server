@@ -53,7 +53,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+   
 
     const database = client.db("danceDb");
     const classCollection = database.collection("classes");
@@ -95,15 +95,16 @@ async function run() {
     app.get("/popularclass", async (req, res) => {
       const query = {};
       const filter ={Status:"approved"}
-      const options = {
-        sort: { EnrollSeats: -1 },
-      };
+      // const options = {
+      //   sort: { EnrollSeats: 1 },
+      // };
       const result = await classCollection
-        .find(filter,query, options)
+        .find(filter,query).sort({  EnrollSeats: -1 })
         .limit(6)
         .toArray();
       res.send(result);
     });
+
 
     app.get("/popularinstructor", async (req, res) => {
       const filter = { role: "instructor" };
@@ -155,6 +156,7 @@ async function run() {
       const result = await classCollection.find( ).toArray();
       res.send(result);
     });
+
 
 
 // update data get apis
@@ -230,7 +232,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/users", verifyJWT, async (req, res) => {
+    app.get("/users", verifyJWT,verifyAdmin, async (req, res) => {
       const users = await UsersCollection.find().toArray();
       res.send(users);
     });
@@ -266,12 +268,13 @@ async function run() {
       const email = req . params.email;
      
       // if(req.decoded?.email !== email){
-      //   res.send({instructor:false})
+      //  return res.send({instructor:false})
       // }
       const query ={Email:email};
       const user = await UsersCollection.findOne(query);
       const result = {instructor:user?.role == 'instructor'}
-      res.send(result);
+       res.send(result);
+       
     })
 
 
@@ -345,17 +348,53 @@ async function run() {
     })
 
 
+    // admin stats
+    app.get('/adminhistory',async(req,res)=>{
+
+      const payments = await paymentCollection.find().toArray();
+
+      const revenue = payments.reduce( ( sum, payment) => sum + payment.amount, 0)
+      res.send({revenue})
+
+    })
 
     // payment api
 
     app.post('/payments', verifyJWT, async (req, res) => {
       const payment = req.body;
-      const insertResult = await paymentCollection.insertOne(payment);
+      const classId = payment. classId
+     const id = payment. cartItems;
+     const query ={ _id: new ObjectId(id)}
+    
 
   
-
-      res.send({ insertResult });
+      const updateResult = await classCollection.updateOne(
+        {_id:new ObjectId(classId)},
+        {$inc:{AvailableSeats:-1,EnrollSeats:+1}}
+      )
+     const insertResult = await paymentCollection.insertOne(payment);
+     const deleteResult = await cartCollection.deleteMany(query)
+      res.send({ insertResult,deleteResult,updateResult });
     })
+
+
+    // paymenthistory
+
+    
+    app.get('/mypayment/:email',async(req,res)=>{
+      const email = req.params.email
+      if (!email) {
+        res.send([]);
+      }
+      const filter ={ email : email}
+      const result = await paymentCollection.find(filter).sort({  date: -1 }).toArray();
+      res.send(result);
+    })
+
+
+
+
+   
 
 
     // Send a ping to confirm a successful connection
