@@ -3,6 +3,7 @@ const app = express();
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
 const port = process.env.PORT || 5000;
 
 //  middleware
@@ -58,6 +59,7 @@ async function run() {
     const classCollection = database.collection("classes");
     const UsersCollection = database.collection("Users");
     const cartCollection = database.collection("carts");
+    const paymentCollection = database.collection("payment");
 
     const verifyAdmin = async (req,res,next)=>{
       const email = req.decoded.email;
@@ -168,7 +170,7 @@ async function run() {
       const filter ={_id:new ObjectId(id)}
       const options = { upsert: true };
       const Updateclass =req.body;
-      console.log(Updateclass)
+     
 
       const updateDoc = {
         $set: {
@@ -181,7 +183,7 @@ async function run() {
          
         },
       };
-
+  
 
       const result = await classCollection.updateOne(filter,updateDoc,options)
       res.send(result)
@@ -325,6 +327,37 @@ async function run() {
       res.send(result);
     });
 
+
+    // payment intencse
+
+    app.post('/create-payment-intent', verifyJWT, async (req, res) => {
+      const { amount } = req.body;
+      const price = parseInt(amount * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: price,
+        currency: 'usd',
+        payment_method_types: ['card']
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret
+      })
+    })
+
+
+
+    // payment api
+
+    app.post('/payments', verifyJWT, async (req, res) => {
+      const payment = req.body;
+      const insertResult = await paymentCollection.insertOne(payment);
+
+  
+
+      res.send({ insertResult });
+    })
+
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
@@ -340,6 +373,7 @@ run().catch(console.dir);
 app.get("/", (req, res) => {
   res.send("dance studio is going");
 });
+
 
 app.listen(port, () => {
   console.log(`dance studio is running on port ${port}`);
